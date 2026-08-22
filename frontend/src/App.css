@@ -583,3 +583,27 @@ body {
   border-top: 1px solid var(--border-color);
   padding-top: 1rem;
 }
+
+.status-pending {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.leave-type-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border-radius: 4px;
+}
+
+.bold-text {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.shadow-sm {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+

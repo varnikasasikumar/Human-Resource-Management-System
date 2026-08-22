@@ -4,6 +4,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import { EmployeeManagement } from './components/EmployeeManagement';
+import { AttendanceManagement } from './components/AttendanceManagement';
+import { LeaveManagement } from './components/LeaveManagement';
 import './App.css';
 
 const RootRedirect = () => {
@@ -21,7 +23,7 @@ const AppLayout = () => {
     <div className="app-shell">
       <header className="app-header">
         <div className="header-brand">
-          <div className="logo-icon">D</div>
+          <div className="logo-icon">🏢</div>
 
           <div>
             <h1 className="brand-title">Dayflow HRMS</h1>
@@ -34,25 +36,39 @@ const AppLayout = () => {
             to="/dashboard"
             className="nav-tab"
           >
-            Dashboard
+            📊 Dashboard
           </Link>
 
           <Link
             to="/employees"
             className="nav-tab"
           >
-            Employees
+            👥 Employees
           </Link>
 
-          <span className="user-info">
-            {user?.loginId}
+          <Link
+            to="/attendance"
+            className="nav-tab"
+          >
+            ⏱️ Attendance
+          </Link>
+
+          <Link
+            to="/leave"
+            className="nav-tab"
+          >
+            📅 Leave
+          </Link>
+
+          <span className="user-info" style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '0 0.5rem', display: 'inline-flex', alignItems: 'center' }}>
+            👤 {user?.loginId} ({user?.role})
           </span>
 
           <button
             className="nav-tab logout-button"
             onClick={logout}
           >
-            Logout
+            🚪 Logout
           </button>
         </nav>
       </header>
@@ -61,6 +77,9 @@ const AppLayout = () => {
         <Routes>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/employees" element={<EmployeeManagement />} />
+          <Route path="/attendance" element={<AttendanceManagement />} />
+          <Route path="/leave" element={<LeaveManagement />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
     </div>
