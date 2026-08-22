@@ -1,17 +1,22 @@
-<<<<<<< HEAD
-import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './pages/Login';
+import ProtectedRoute from './components/ProtectedRoute';
 import { Dashboard } from './components/Dashboard';
 import { EmployeeManagement } from './components/EmployeeManagement';
 import './App.css';
 
-type ActiveTab = 'dashboard' | 'employees';
+const RootRedirect = () => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+};
 
-function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('employees');
+const AppLayout = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="app-shell">
-      {/* Top Navbar */}
       <header className="app-header">
         <div className="header-brand">
           <div className="logo-icon">🏢</div>
@@ -22,40 +27,32 @@ function App() {
         </div>
 
         <nav className="header-nav">
-          <button
-            className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-          >
+          <Link to="/dashboard" className="nav-tab">
             📊 Dashboard
-          </button>
-          <button
-            className={`nav-tab ${activeTab === 'employees' ? 'active' : ''}`}
-            onClick={() => setActiveTab('employees')}
-          >
+          </Link>
+          <Link to="/employees" className="nav-tab">
             👥 Employees
+          </Link>
+          {user?.loginId && (
+            <span className="user-info" style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '0 0.5rem', display: 'inline-flex', alignItems: 'center' }}>
+              👤 {user.loginId}
+            </span>
+          )}
+          <button className="nav-tab logout-button" onClick={logout}>
+            🚪 Logout
           </button>
         </nav>
       </header>
 
-      {/* Main View Container */}
       <main className="app-main">
-        {activeTab === 'dashboard' ? (
-          <Dashboard onNavigateToEmployees={() => setActiveTab('employees')} />
-        ) : (
-          <EmployeeManagement />
-        )}
+        <Routes>
+          <Route path="/dashboard" element={<Dashboard onNavigateToEmployees={() => navigate('/employees')} />} />
+          <Route path="/employees" element={<EmployeeManagement />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
       </main>
     </div>
-=======
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import ProtectedRoute from './components/ProtectedRoute';
-
-const RootRedirect = () => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+  );
 };
 
 function App() {
@@ -63,15 +60,19 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<RootRedirect />} />
+          {/* Public route */}
           <Route path="/login" element={<Login />} />
+
+          {/* Root redirect */}
+          <Route path="/" element={<RootRedirect />} />
+
+          {/* Protected application */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/*" element={<AppLayout />} />
           </Route>
         </Routes>
       </Router>
     </AuthProvider>
->>>>>>> origin/main
   );
 }
 
