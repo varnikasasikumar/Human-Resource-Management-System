@@ -33,6 +33,9 @@ public class AuthServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private com.dayflow.authservice.security.JwtTokenProvider jwtTokenProvider;
+
     @InjectMocks
     private AuthServiceImpl authService;
 
@@ -136,5 +139,93 @@ public class AuthServiceTest {
         
         assertTrue(exception.getMessage().contains("email"));
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void testLogin_Success() {
+        // Arrange
+        com.dayflow.authservice.dto.LoginRequest request = new com.dayflow.authservice.dto.LoginRequest();
+        request.setLoginId("OIJODO20230001");
+        request.setPassword("Password123!");
+
+        User user = new User();
+        user.setLoginId("OIJODO20230001");
+        user.setPasswordHash("$2a$10$hashed");
+        user.setRole(Role.EMPLOYEE);
+        user.setEnabled(true);
+        user.setFirstLogin(true);
+
+        when(userRepository.findByLoginId(request.getLoginId())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(request.getPassword(), user.getPasswordHash())).thenReturn(true);
+        when(jwtTokenProvider.generateToken(user.getLoginId(), user.getRole().name())).thenReturn("jwt.token.here");
+
+        // Act
+        com.dayflow.authservice.dto.LoginResponse response = authService.login(request);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals("jwt.token.here", response.getToken());
+        assertEquals("OIJODO20230001", response.getLoginId());
+        assertEquals(Role.EMPLOYEE, response.getRole());
+        assertTrue(response.isFirstLogin());
+    }
+
+    @Test
+    void testLogin_InvalidLoginId() {
+        // Arrange
+        com.dayflow.authservice.dto.LoginRequest request = new com.dayflow.authservice.dto.LoginRequest();
+        request.setLoginId("UNKNOWN");
+        request.setPassword("Password123!");
+
+        when(userRepository.findByLoginId(request.getLoginId())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        com.dayflow.authservice.exception.InvalidCredentialsException exception = assertThrows(com.dayflow.authservice.exception.InvalidCredentialsException.class, () -> {
+            authService.login(request);
+        });
+        assertEquals("Invalid Login ID or Password", exception.getMessage());
+    }
+
+    @Test
+    void testLogin_InvalidPassword() {
+        // Arrange
+        com.dayflow.authservice.dto.LoginRequest request = new com.dayflow.authservice.dto.LoginRequest();
+        request.setLoginId("OIJODO20230001");
+        request.setPassword("WrongPassword!");
+
+        User user = new User();
+        user.setLoginId("OIJODO20230001");
+        user.setPasswordHash("$2a$10$hashed");
+        user.setEnabled(true);
+
+        when(userRepository.findByLoginId(request.getLoginId())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(request.getPassword(), user.getPasswordHash())).thenReturn(false);
+
+        // Act & Assert
+        com.dayflow.authservice.exception.InvalidCredentialsException exception = assertThrows(com.dayflow.authservice.exception.InvalidCredentialsException.class, () -> {
+            authService.login(request);
+        });
+        assertEquals("Invalid Login ID or Password", exception.getMessage());
+    }
+
+    @Test
+    void testLogin_AccountDisabled() {
+        // Arrange
+        com.dayflow.authservice.dto.LoginRequest request = new com.dayflow.authservice.dto.LoginRequest();
+        request.setLoginId("OIJODO20230001");
+        request.setPassword("Password123!");
+
+        User user = new User();
+        user.setLoginId("OIJODO20230001");
+        user.setPasswordHash("$2a$10$hashed");
+        user.setEnabled(false); // Disabled
+
+        when(userRepository.findByLoginId(request.getLoginId())).thenReturn(Optional.of(user));
+
+        // Act & Assert
+        com.dayflow.authservice.exception.AccountDisabledException exception = assertThrows(com.dayflow.authservice.exception.AccountDisabledException.class, () -> {
+            authService.login(request);
+        });
+        assertEquals("Account is disabled. Please contact HR.", exception.getMessage());
     }
 }
