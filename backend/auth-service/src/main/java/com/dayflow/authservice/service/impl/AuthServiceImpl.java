@@ -3,9 +3,14 @@ package com.dayflow.authservice.service.impl;
 import com.dayflow.authservice.dto.AccountCreationRequest;
 import com.dayflow.authservice.dto.AccountCreationResponse;
 import com.dayflow.authservice.dto.LoginIdGenerationRequest;
+import com.dayflow.authservice.dto.LoginRequest;
+import com.dayflow.authservice.dto.LoginResponse;
+import com.dayflow.authservice.exception.AccountDisabledException;
 import com.dayflow.authservice.exception.DuplicateResourceException;
+import com.dayflow.authservice.exception.InvalidCredentialsException;
 import com.dayflow.authservice.model.User;
 import com.dayflow.authservice.repository.UserRepository;
+import com.dayflow.authservice.security.JwtTokenProvider;
 import com.dayflow.authservice.service.AuthService;
 import com.dayflow.authservice.service.CredentialGeneratorService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,13 +22,16 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final CredentialGeneratorService credentialGeneratorService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     public AuthServiceImpl(UserRepository userRepository, 
                            CredentialGeneratorService credentialGeneratorService, 
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
         this.credentialGeneratorService = credentialGeneratorService;
         this.passwordEncoder = passwordEncoder;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @Override
@@ -64,5 +72,28 @@ public class AuthServiceImpl implements AuthService {
 
         // 6. Return Credentials (plaintext password returned to caller, not stored)
         return new AccountCreationResponse(loginId, temporaryPassword);
+    }
+
+    @Override
+    public LoginResponse login(LoginRequest request) {
+        // 1. Find user by loginId
+        User user = userRepository.findByLoginId(request.getLoginId())
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid Login ID or Password"));
+
+        // 2. Check if user is enabled
+        if (!user.isEnabled()) {
+            throw new AccountDisabledException("Account is disabled. Please contact HR.");
+        }
+
+        // 3. Verify password
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException("Invalid Login ID or Password");
+        }
+
+        // 4. Generate JWT token
+        String token = jwtTokenProvider.generateToken(user.getLoginId(), user.getRole().name());
+
+        // 5. Return LoginResponse
+        return new LoginResponse(token, user.getLoginId(), user.getRole(), user.isFirstLogin());
     }
 }
