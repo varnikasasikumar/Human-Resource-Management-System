@@ -1,10 +1,26 @@
 package com.dayflow.authservice.controller;
 
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
+import com.dayflow.authservice.dto.AccountCreationRequest;
+import com.dayflow.authservice.dto.AccountCreationResponse;
+import com.dayflow.authservice.service.AuthService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    // Authentication endpoints will be implemented here
+    
+    private final AuthService authService;
+    
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/accounts")
+    public ResponseEntity<AccountCreationResponse> createAccount(@Valid @RequestBody AccountCreationRequest request) {
+        AccountCreationResponse response = authService.createAccount(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
 }
