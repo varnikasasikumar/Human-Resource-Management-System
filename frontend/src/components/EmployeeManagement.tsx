@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import type { Employee, EmployeeFormData } from '../types/employee';
+import { Search, Plus, RotateCw, Pencil, Trash2, Users } from 'lucide-react';
 import { employeeService } from '../services/employeeService';
+import type { Employee, EmployeeFormData } from '../types/employee';
 import { EmployeeModal } from './EmployeeModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 
 export const EmployeeManagement: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-
-  // Modal States
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Modals state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-
-  // Delete Modal States
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [deletingEmployee, setDeletingEmployee] = useState<Employee | null>(null);
-  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Notifications
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchEmployees = async () => {
     try {
@@ -95,67 +96,61 @@ export const EmployeeManagement: React.FC = () => {
 
   return (
     <div className="page-container">
-      <div className="page-header">
+      <div className="page-header-container">
         <div>
-          <h2>Employee Directory</h2>
-          <p className="subtitle">Manage staff records, departments, and employment details</p>
+          <h2>Employees</h2>
+          <p className="subtitle">Manage your organization's workforce.</p>
         </div>
         <div className="header-actions">
-          <button className="btn btn-secondary" onClick={fetchEmployees} disabled={loading}>
-            🔄 Refresh
+          <button className="btn btn-secondary" onClick={fetchEmployees} disabled={loading} title="Refresh">
+            <RotateCw size={18} />
           </button>
           <button className="btn btn-primary" onClick={handleOpenAddModal}>
-            ➕ Add Employee
+            <Plus size={18} /> Add Employee
           </button>
         </div>
       </div>
 
-      {/* Notifications */}
       {successMessage && (
         <div className="alert alert-success">
-          <span>✅ {successMessage}</span>
-          <button className="alert-close" onClick={() => setSuccessMessage(null)}>&times;</button>
+          <span>{successMessage}</span>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem' }} onClick={() => setSuccessMessage(null)}>&times;</button>
         </div>
       )}
 
       {error && (
         <div className="alert alert-error">
-          <span>⚠️ {error}</span>
-          <button className="alert-close" onClick={() => setError(null)}>&times;</button>
+          <span>{error}</span>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem' }} onClick={() => setError(null)}>&times;</button>
         </div>
       )}
 
-      {/* Filter / Search Bar */}
-      <div className="filter-bar">
-        <div className="search-box">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="header-search" style={{ width: '320px', maxWidth: '100%' }}>
+          <Search size={18} />
           <input
             type="text"
-            placeholder="Search by ID, name, email, department or designation..."
+            placeholder="Search employees..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="stats-badge">
-          Showing {filteredEmployees.length} of {employees.length} employees
+        <div style={{ fontSize: '0.875rem', color: 'var(--df-text-muted)' }}>
+          Showing <strong>{filteredEmployees.length}</strong> of <strong>{employees.length}</strong> employees
         </div>
       </div>
 
-      {/* Main Table Area */}
       <div className="table-card">
         {loading ? (
-          <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Loading employee data from http://localhost:8081...</p>
+          <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--df-text-muted)' }}>
+            <RotateCw className="spinner" size={24} style={{ animation: 'spin 1s linear infinite', marginBottom: '1rem' }} />
+            <p>Loading employee data...</p>
           </div>
         ) : filteredEmployees.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📁</div>
+            <div className="empty-icon"><Users /></div>
             <h3>No Employees Found</h3>
-            <p>
-              {searchQuery
-                ? `No employees match your search query "${searchQuery}".`
-                : 'There are no employee records in the system yet.'}
-            </p>
+            <p>{searchQuery ? `No matches for "${searchQuery}".` : 'There are no employee records in the system yet.'}</p>
             {!searchQuery && (
               <button className="btn btn-primary" onClick={handleOpenAddModal}>
                 Create First Employee
@@ -168,62 +163,45 @@ export const EmployeeManagement: React.FC = () => {
               <thead>
                 <tr>
                   <th>Employee ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
+                  <th>Employee</th>
                   <th>Department</th>
                   <th>Designation</th>
-                  <th>Joining Date</th>
+                  <th>Email</th>
+                  <th>Date Joined</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredEmployees.map((emp) => (
                   <tr key={emp.id || emp.employeeId}>
+                    <td style={{ fontWeight: 500 }}>{emp.employeeId}</td>
                     <td>
-                      <span className="badge badge-id">{emp.employeeId}</span>
-                    </td>
-                    <td>
-                      <div className="user-info">
+                      <div className="user-info-cell">
                         <div className="avatar">
-                          {emp.firstName.charAt(0)}
-                          {emp.lastName.charAt(0)}
+                          {emp.firstName.charAt(0)}{emp.lastName.charAt(0)}
                         </div>
-                        <span className="user-name">
-                          {emp.firstName} {emp.lastName}
-                        </span>
+                        <div className="details">
+                          <span className="name">{emp.firstName} {emp.lastName}</span>
+                        </div>
                       </div>
                     </td>
-                    <td>{emp.email}</td>
-                    <td>{emp.phone || '-'}</td>
                     <td>{emp.department}</td>
                     <td>{emp.designation}</td>
+                    <td><a href={`mailto:${emp.email}`} style={{ color: 'var(--df-accent)' }}>{emp.email}</a></td>
                     <td>{emp.dateOfJoining || '-'}</td>
                     <td>
-                      <span
-                        className={`status-pill ${
-                          emp.status === 'ACTIVE' ? 'status-active' : 'status-inactive'
-                        }`}
-                      >
+                      <span className={`status-pill ${emp.status === 'ACTIVE' ? 'status-active' : 'status-inactive'}`}>
                         {emp.status || 'ACTIVE'}
                       </span>
                     </td>
                     <td>
-                      <div className="action-buttons">
-                        <button
-                          className="btn-icon btn-edit"
-                          title="Edit Employee"
-                          onClick={() => handleOpenEditModal(emp)}
-                        >
-                          ✏️ Edit
+                      <div className="action-buttons" style={{ justifyContent: 'flex-end' }}>
+                        <button className="btn-icon" title="Edit" onClick={() => handleOpenEditModal(emp)}>
+                          <Pencil size={18} />
                         </button>
-                        <button
-                          className="btn-icon btn-delete"
-                          title="Delete Employee"
-                          onClick={() => handleOpenDeleteModal(emp)}
-                        >
-                          🗑️ Delete
+                        <button className="btn-icon" title="Delete" onClick={() => handleOpenDeleteModal(emp)}>
+                          <Trash2 size={18} style={{ color: 'var(--df-error)' }} />
                         </button>
                       </div>
                     </td>
@@ -235,7 +213,6 @@ export const EmployeeManagement: React.FC = () => {
         )}
       </div>
 
-      {/* Add / Edit Modal */}
       <EmployeeModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -243,7 +220,6 @@ export const EmployeeManagement: React.FC = () => {
         initialData={editingEmployee}
       />
 
-      {/* Delete Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
         employee={deletingEmployee}
